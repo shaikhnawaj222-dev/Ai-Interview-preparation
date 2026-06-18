@@ -15,7 +15,7 @@ An AI-powered interview preparation platform built with the MERN Stack and Googl
 - Express.js
 - MongoDB
 - Google Gemini API
-- Tailwind CSS
+- Plain css
 
 ## Installation
 
