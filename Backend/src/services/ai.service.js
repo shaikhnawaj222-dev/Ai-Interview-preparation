@@ -234,12 +234,7 @@ async function generatePdfFromHtml(htmlContent) {
   }
 }
 
-async function generateResumePdf({ resume, selfDescription, jobDescription, resumeHtml }) {
-  if (resumeHtml) {
-    const pdfBuffer = await generatePdfFromHtml(resumeHtml);
-    return { pdfBuffer, html: resumeHtml };
-  }
-
+async function generateResumePdf({ resume, selfDescription, jobDescription }) {
   const cleanResume = cleanAndTruncate(resume, 3000);
   const cleanSelfDesc = cleanAndTruncate(selfDescription, 1000);
   const cleanJobDesc = cleanAndTruncate(jobDescription, 2000);
@@ -400,7 +395,7 @@ async function generateResumePdf({ resume, selfDescription, jobDescription, resu
 
   const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
 
-  return { pdfBuffer, html: jsonContent.html };
+  return pdfBuffer;
 }
 
 async function evaluateAnswer({ question, answer, jobTitle }) {

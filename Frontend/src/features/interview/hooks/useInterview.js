@@ -7,28 +7,8 @@ import {
   deleteInterviewReport,
 } from "../services/interview.api";
 import { useContext, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router";
 import { InterviewContext } from "../interview.context";
-
-const getFriendlyErrorMessage = (technicalError) => {
-  if (!technicalError) return "Error: Failed to generate resume PDF. Please try again.";
-  
-  const errStr = technicalError.toString().toLowerCase();
-  
-  if (errStr.includes("failed to launch the browser") || errStr.includes("shared libraries") || errStr.includes("puppeteer") || errStr.includes("libatk")) {
-    return "Server Error: Chrome/Puppeteer is not configured correctly on Render.\n\nPlease check your Build Command: 'npm install && npx puppeteer browsers install chrome' and ensure the 'PUPPETEER_CACHE_DIR' environment variable is set.";
-  }
-  
-  if (errStr.includes("api key") || errStr.includes("quota") || errStr.includes("limit") || errStr.includes("429") || errStr.includes("exhausted") || errStr.includes("api_key")) {
-    return "API Quota Limit: Gemini API key limit has been exhausted.\n\nPlease update GOOGLE_GENAI_API_KEY with a new key in your Render Dashboard.";
-  }
-  
-  if (errStr.includes("network") || errStr.includes("timeout") || errStr.includes("conn") || errStr.includes("err_connection")) {
-    return "Network Error: Please check your internet connection and try again.";
-  }
-  
-  return `Error: ${technicalError}`;
-};
+import { useParams, useNavigate } from "react-router";
 
 export const useInterview = () => {
   const context = useContext(InterviewContext);
@@ -108,7 +88,7 @@ export const useInterview = () => {
       if (response && response.type === "application/json") {
         const text = await response.text();
         const errObj = JSON.parse(text);
-        alert(getFriendlyErrorMessage(errObj.message || "Failed to generate PDF resume."));
+        alert(errObj.message || "Failed to generate PDF resume.");
         return;
       }
 
@@ -135,7 +115,7 @@ export const useInterview = () => {
       } else if (error.message) {
         errMsg = error.message;
       }
-      alert(getFriendlyErrorMessage(errMsg));
+      alert(errMsg);
     } finally {
       setLoading(false);
     }
