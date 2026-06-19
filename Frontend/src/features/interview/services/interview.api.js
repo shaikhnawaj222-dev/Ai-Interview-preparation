@@ -55,10 +55,7 @@ export const getAllInterviewReports = async () => {
 export const generateResumePdf = async ({ interviewReportId }) => {
   const response = await api.post(
     `/api/interview/resume/pdf/${interviewReportId}`,
-    null,
-    {
-      responseType: "blob",
-    },
+    null
   );
 
   return response.data;
