@@ -5,6 +5,14 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GENAI_API_KEY,
 });
 
+function cleanAndTruncate(str, maxChars = 3000) {
+  if (!str) return "";
+  // Compress multiple spaces/newlines to a single space to save tokens
+  const cleaned = str.replace(/\s+/g, " ").trim();
+  if (cleaned.length <= maxChars) return cleaned;
+  return cleaned.substring(0, maxChars) + "...";
+}
+
 // JSON schemas specified using standard JSON Schema format for Gemini API
 const interviewReportSchema = {
   type: "object",
@@ -161,11 +169,22 @@ async function generateInterviewReport({
   selfDescription,
   jobDescription,
 }) {
-  const prompt = `Generate an interview report for a candidate with the following details:
-                        Resume: ${resume}
-                        Self Description: ${selfDescription}
-                        Job Description: ${jobDescription}
-`;
+  const cleanResume = cleanAndTruncate(resume, 3000);
+  const cleanSelfDesc = cleanAndTruncate(selfDescription, 1000);
+  const cleanJobDesc = cleanAndTruncate(jobDescription, 2000);
+
+  const prompt = `Generate a concise interview report for a candidate.
+                  
+                  Candidate Data:
+                  - Resume: ${cleanResume}
+                  - Self Description: ${cleanSelfDesc}
+                  
+                  Target Position Job Description:
+                  - ${cleanJobDesc}
+
+                  CRITICAL CONSTRAINTS (TOKEN SAVING):
+                  1. Generate exactly 3 highly relevant technical questions and exactly 3 behavioral questions.
+                  2. Keep all intentions, answers, tasks, and descriptions brief, direct, and under 50 words per item. Avoid verbose explanations.`;
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
@@ -216,14 +235,18 @@ async function generatePdfFromHtml(htmlContent) {
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
+  const cleanResume = cleanAndTruncate(resume, 3000);
+  const cleanSelfDesc = cleanAndTruncate(selfDescription, 1000);
+  const cleanJobDesc = cleanAndTruncate(jobDescription, 2000);
+
   const prompt = `Generate a highly professional, ATS-friendly resume for a candidate tailored to the target job description.
 
                         Candidate Data:
-                        - Resume: ${resume}
-                        - Self Description: ${selfDescription}
+                        - Resume: ${cleanResume}
+                        - Self Description: ${cleanSelfDesc}
 
                         Target Job Description:
-                        - ${jobDescription}
+                        - ${cleanJobDesc}
 
                         The response should be a JSON object with a single field "html" containing the complete HTML content of the resume.
 
@@ -370,12 +393,20 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
 }
 
 async function evaluateAnswer({ question, answer, jobTitle }) {
-  const prompt = `Evaluate the candidate's response to the following interview question:
-                  Job Title: ${jobTitle}
-                  Question: ${question}
-                  Candidate's Answer: ${answer}
+  const cleanQuestion = cleanAndTruncate(question, 1000);
+  const cleanAns = cleanAndTruncate(answer, 2000);
 
-                  Analyze the answer critically. Provide an evaluation including a score out of 10, a list of strengths, key areas for improvement, and a highly polished model/sample response that follows best industry practices.`;
+  const prompt = `Evaluate the candidate's response to the following interview question:
+                  Job Title: ${jobTitle || "Target Position"}
+                  Question: ${cleanQuestion}
+                  Candidate's Answer: ${cleanAns}
+
+                  Analyze the answer critically. 
+                  Provide a concise evaluation:
+                  - Score out of 10.
+                  - Max 3 key strengths (keep each under 15 words).
+                  - Max 3 specific areas of improvement (keep each under 15 words).
+                  - A highly polished, brief model/sample response (max 60 words).`;
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
