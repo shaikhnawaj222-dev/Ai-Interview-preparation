@@ -9,7 +9,7 @@ app.use(cookieParser());
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
-  "https://ai-interview-preparation-delta.vercel.app",
+  "https://ai-interview-preparation-1-u507.onrender.com",
 ];
 
 
