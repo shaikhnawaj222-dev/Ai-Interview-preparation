@@ -179,28 +179,40 @@ async function generateInterviewReport({
   return JSON.parse(response.text);
 }
 
+let browserInstance = null;
+
+async function getBrowserInstance() {
+  if (!browserInstance || !browserInstance.connected) {
+    browserInstance = await puppeteer.launch({
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--single-process", "--no-zygote"],
+      headless: "new"
+    });
+  }
+  return browserInstance;
+}
+
 async function generatePdfFromHtml(htmlContent) {
-  const browser = await puppeteer.launch({
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--single-process", "--no-zygote"],
-    headless: "new"
-  });
+  const browser = await getBrowserInstance();
   const page = await browser.newPage();
-  await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+  
+  try {
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
 
-  const pdfBuffer = await page.pdf({
-    format: "A4",
-    margin: {
-      top: "12mm",
-      bottom: "12mm",
-      left: "12mm",
-      right: "12mm",
-    },
-  });
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      margin: {
+        top: "12mm",
+        bottom: "12mm",
+        left: "12mm",
+        right: "12mm",
+      },
+    });
 
-  await browser.close();
-
-  return pdfBuffer;
+    return pdfBuffer;
+  } finally {
+    await page.close();
+  }
 }
 
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
@@ -215,15 +227,130 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
 
                         The response should be a JSON object with a single field "html" containing the complete HTML content of the resume.
 
-                        CRITICAL CONSTRAINTS (STRICTLY 1-2 PAGES MAX):
-                        1. The entire resume content and design MUST fit cleanly within exactly 1 or 2 A4 pages when printed or converted to PDF. No extra trailing pages or overflow allowed.
-                        2. Implement a compact, modern CSS layout in the HTML style block:
-                           - Set body font-size to 10px - 11px for text, 13px - 14px for section headers.
-                           - Use compact line heights (1.2 - 1.3) and narrow margins/padding (e.g., 4px - 10px).
-                           - Utilize clean layout patterns (such as a two-column sidebar grid or a flexbox row structure) to maximize horizontal space.
-                           - Apply page-break-inside rules (e.g., page-break-inside: avoid) to prevent card sections from breaking awkwardly.
-                        3. Focus on quality rather than quantity. Keep descriptions crisp and bulleted instead of verbose paragraphs.
-                        4. The design must look extremely premium, clean, modern, and human-written.
+                        STRICT STYLE & LAYOUT CONSTRAINTS:
+                        You MUST use the exact HTML structure and CSS styles specified below. Do NOT alter the CSS classes, colors, fonts, margins, or padding. This is critical to keep the design and styling completely consistent for every resume generated.
+
+                        Strict CSS stylesheet to include inside the <style> tag of the <head>:
+                        \`\`\`css
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+                        * { box-sizing: border-box; margin: 0; padding: 0; }
+                        body {
+                          font-family: 'Inter', sans-serif;
+                          color: #334155;
+                          background-color: #ffffff;
+                          line-height: 1.4;
+                          font-size: 10px;
+                          padding: 10mm 15mm;
+                        }
+                        .header {
+                          text-align: center;
+                          border-bottom: 2px solid #0f172a;
+                          padding-bottom: 8px;
+                          margin-bottom: 12px;
+                        }
+                        .header h1 {
+                          font-size: 20px;
+                          font-weight: 700;
+                          color: #0f172a;
+                          text-transform: uppercase;
+                          letter-spacing: 0.5px;
+                          margin-bottom: 2px;
+                        }
+                        .header .title {
+                          font-size: 11px;
+                          font-weight: 600;
+                          color: #2563eb;
+                          margin-bottom: 6px;
+                          text-transform: uppercase;
+                          letter-spacing: 1px;
+                        }
+                        .header .contact {
+                          display: flex;
+                          justify-content: center;
+                          flex-wrap: wrap;
+                          gap: 12px;
+                          font-size: 9px;
+                          color: #475569;
+                        }
+                        .header .contact a {
+                          color: #475569;
+                          text-decoration: none;
+                        }
+                        .section {
+                          margin-bottom: 12px;
+                        }
+                        .section-title {
+                          font-size: 10.5px;
+                          font-weight: 700;
+                          color: #0f172a;
+                          text-transform: uppercase;
+                          letter-spacing: 0.5px;
+                          border-bottom: 1px solid #cbd5e1;
+                          padding-bottom: 2px;
+                          margin-bottom: 6px;
+                        }
+                        .summary {
+                          font-size: 9.5px;
+                          color: #334155;
+                          margin-bottom: 8px;
+                          line-height: 1.45;
+                          text-align: justify;
+                        }
+                        .item {
+                          margin-bottom: 8px;
+                          page-break-inside: avoid;
+                        }
+                        .item-header {
+                          display: flex;
+                          justify-content: space-between;
+                          font-weight: 600;
+                          color: #0f172a;
+                          font-size: 10px;
+                          margin-bottom: 1px;
+                        }
+                        .item-subheader {
+                          display: flex;
+                          justify-content: space-between;
+                          font-size: 9px;
+                          color: #475569;
+                          font-style: italic;
+                          margin-bottom: 3px;
+                        }
+                        .bullets {
+                          list-style-type: disc;
+                          padding-left: 12px;
+                          color: #334155;
+                        }
+                        .bullets li {
+                          margin-bottom: 2px;
+                          font-size: 9.5px;
+                        }
+                        .skills-grid {
+                          display: grid;
+                          grid-template-columns: repeat(2, 1fr);
+                          gap: 6px;
+                        }
+                        .skill-category {
+                          font-size: 9.5px;
+                          color: #334155;
+                        }
+                        .skill-category strong {
+                          color: #0f172a;
+                        }
+                        \`\`\`
+
+                        Strict HTML structure instructions:
+                        - Enclose name, title, contact inside a div with class "header".
+                        - Use sections with class "section". Inside each, put the title in a div with class "section-title" (e.g., "PROFESSIONAL SUMMARY", "WORK EXPERIENCE", "PROJECTS", "EDUCATION", "SKILLS").
+                        - For summary text, use a paragraph with class "summary".
+                        - For job roles, projects, or degrees, use a div with class "item".
+                          - Use class "item-header" to place Title (e.g. Job Title, Project Name) on the left and Date on the right.
+                          - Use class "item-subheader" to place Subtitle (Company / Institution) on the left and Location on the right.
+                          - Use a list with class "bullets" for the description items.
+                        - For skills, use a div with class "skills-grid" containing divs with class "skill-category".
+                        
+                        CRITICAL PAGE CONSTRAINTS (STRICTLY 1-2 PAGES):
+                        Keep text tight and select only the most relevant experience and points so the generated HTML fits perfectly within exactly 1 or 2 A4 pages.
                     `;
 
   const response = await ai.models.generateContent({
