@@ -1,4 +1,5 @@
 const { GoogleGenAI } = require("@google/genai");
+const puppeteer = require("puppeteer");
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GENAI_API_KEY,
@@ -178,6 +179,26 @@ async function generateInterviewReport({
   return JSON.parse(response.text);
 }
 
+async function generatePdfFromHtml(htmlContent) {
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+  await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+  const pdfBuffer = await page.pdf({
+    format: "A4",
+    margin: {
+      top: "12mm",
+      bottom: "12mm",
+      left: "12mm",
+      right: "12mm",
+    },
+  });
+
+  await browser.close();
+
+  return pdfBuffer;
+}
+
 async function generateResumePdf({ resume, selfDescription, jobDescription }) {
   const prompt = `Generate a highly professional, ATS-friendly resume for a candidate tailored to the target job description.
 
@@ -212,7 +233,9 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
 
   const jsonContent = JSON.parse(response.text);
 
-  return jsonContent.html;
+  const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
+
+  return pdfBuffer;
 }
 
 async function evaluateAnswer({ question, answer, jobTitle }) {

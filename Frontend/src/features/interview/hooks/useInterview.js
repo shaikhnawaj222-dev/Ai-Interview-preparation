@@ -85,30 +85,33 @@ export const useInterview = () => {
     try {
       const response = await generateResumePdf({ interviewReportId });
       
-      if (!response || !response.html) {
-        throw new Error("No HTML content received from the server.");
-      }
-
-      // Open a new tab/window to print the resume
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        alert("Please allow popups to download/print your resume.");
+      if (response && response.type === "application/json") {
+        const text = await response.text();
+        const errObj = JSON.parse(text);
+        alert(errObj.message || "Failed to generate PDF resume.");
         return;
       }
 
-      printWindow.document.open();
-      printWindow.document.write(response.html);
-      printWindow.document.close();
-
-      // Trigger the browser's print dialog (which lets user choose "Save as PDF")
-      setTimeout(() => {
-        printWindow.print();
-      }, 500);
+      const url = window.URL.createObjectURL(
+        new Blob([response], { type: "application/pdf" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `resume_${interviewReportId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
-      console.error("PDF print error:", error);
-      let errMsg = "An error occurred while loading the resume print console.";
-      if (error.response?.data?.message) {
-        errMsg = error.response.data.message;
+      console.error("PDF download error:", error);
+      let errMsg = "An error occurred while generating/downloading the PDF.";
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const errObj = JSON.parse(text);
+          errMsg = errObj.message || errMsg;
+        } catch (e) {
+          // ignore
+        }
       } else if (error.message) {
         errMsg = error.message;
       }
