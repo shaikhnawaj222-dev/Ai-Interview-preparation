@@ -84,6 +84,14 @@ export const useInterview = () => {
     setLoading(true);
     try {
       const response = await generateResumePdf({ interviewReportId });
+      
+      if (response && response.type === "application/json") {
+        const text = await response.text();
+        const errObj = JSON.parse(text);
+        alert(errObj.message || "Failed to generate PDF resume.");
+        return;
+      }
+
       const url = window.URL.createObjectURL(
         new Blob([response], { type: "application/pdf" }),
       );
@@ -92,8 +100,22 @@ export const useInterview = () => {
       link.setAttribute("download", `resume_${interviewReportId}.pdf`);
       document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (error) {
-      console.log(error);
+      console.error("PDF download error:", error);
+      let errMsg = "An error occurred while generating/downloading the PDF.";
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const errObj = JSON.parse(text);
+          errMsg = errObj.message || errMsg;
+        } catch (e) {
+          // ignore
+        }
+      } else if (error.message) {
+        errMsg = error.message;
+      }
+      alert(errMsg);
     } finally {
       setLoading(false);
     }
