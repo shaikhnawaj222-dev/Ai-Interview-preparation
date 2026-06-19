@@ -9,6 +9,7 @@ import {
 import { useContext, useEffect, useCallback } from "react";
 import { InterviewContext } from "../interview.context";
 import { useParams, useNavigate } from "react-router";
+import html2pdf from "html2pdf.js";
 
 export const useInterview = () => {
   const context = useContext(InterviewContext);
@@ -84,16 +85,46 @@ export const useInterview = () => {
     setLoading(true);
     try {
       const response = await generateResumePdf({ interviewReportId });
-      const url = window.URL.createObjectURL(
-        new Blob([response], { type: "application/pdf" }),
-      );
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `resume_${interviewReportId}.pdf`);
-      document.body.appendChild(link);
-      link.click();
+      
+      if (!response || !response.html) {
+        throw new Error("No HTML content received from the server.");
+      }
+
+      // Create a temporary container for the HTML element
+      const element = document.createElement("div");
+      element.innerHTML = response.html;
+      element.style.position = "absolute";
+      element.style.left = "-9999px";
+      element.style.top = "0";
+      document.body.appendChild(element);
+
+      // PDF configuration options
+      const opt = {
+        margin:       [10, 10, 10, 10], // top, left, bottom, right in mm
+        filename:     `resume_${interviewReportId}.pdf`,
+        image:        { type: "jpeg", quality: 0.98 },
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true,
+          logging: false
+        },
+        jsPDF:        { unit: "mm", format: "a4", orientation: "portrait" }
+      };
+
+      // Generate PDF on client-side and download
+      await html2pdf().set(opt).from(element).save();
+
+      // Clean up the temporary container from DOM
+      document.body.removeChild(element);
     } catch (error) {
-      console.log(error);
+      console.error("PDF download error:", error);
+      let errMsg = "An error occurred while generating/downloading the PDF.";
+      if (error.response?.data) {
+        errMsg = error.response.data.message || errMsg;
+      } else if (error.message) {
+        errMsg = error.message;
+      }
+      alert(errMsg);
     } finally {
       setLoading(false);
     }
