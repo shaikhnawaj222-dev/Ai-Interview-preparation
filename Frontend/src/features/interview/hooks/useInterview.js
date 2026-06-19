@@ -11,23 +11,16 @@ import { InterviewContext } from "../interview.context";
 import { useParams, useNavigate } from "react-router";
 
 const getFriendlyErrorMessage = (technicalError) => {
-  if (!technicalError) return "Failed to generate PDF resume. Please try again.";
+  if (!technicalError) return "Unable to generate your resume at the moment. Please try again later.";
   
   const errStr = technicalError.toString().toLowerCase();
   
-  if (errStr.includes("failed to launch the browser") || errStr.includes("shared libraries") || errStr.includes("puppeteer") || errStr.includes("libatk")) {
-    return "Server Error: The PDF generator is not set up correctly on the server.";
+  if (errStr.includes("network") || errStr.includes("timeout") || errStr.includes("conn") || errStr.includes("err_connection") || errStr.includes("failed to fetch")) {
+    return "Network connection error. Please check your internet connection and try again.";
   }
   
-  if (errStr.includes("api key") || errStr.includes("quota") || errStr.includes("limit") || errStr.includes("429") || errStr.includes("exhausted") || errStr.includes("api_key")) {
-    return "API Error: The AI service limit has been reached. Please check the API key.";
-  }
-  
-  if (errStr.includes("network") || errStr.includes("timeout") || errStr.includes("conn") || errStr.includes("err_connection")) {
-    return "Network Error: Please check your internet connection and try again.";
-  }
-  
-  return technicalError;
+  // Show a generic message for all other server/API issues, keeping developer logs in console
+  return "Unable to generate your resume at the moment. Please try again later.";
 };
 
 export const useInterview = () => {
