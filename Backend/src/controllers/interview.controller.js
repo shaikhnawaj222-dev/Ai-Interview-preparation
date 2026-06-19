@@ -125,13 +125,19 @@ async function generateResumePdfController(req, res) {
       });
     }
 
-    const { resume, jobDescription, selfDescription } = interviewReport;
+    const { resume, jobDescription, selfDescription, resumeHtml } = interviewReport;
 
-    const pdfBuffer = await generateResumePdf({
+    const { pdfBuffer, html } = await generateResumePdf({
       resume,
       jobDescription,
       selfDescription,
+      resumeHtml,
     });
+
+    if (!interviewReport.resumeHtml) {
+      interviewReport.resumeHtml = html;
+      await interviewReport.save();
+    }
 
     res.set({
       "Content-Type": "application/pdf",
