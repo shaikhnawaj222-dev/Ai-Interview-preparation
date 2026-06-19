@@ -10,39 +10,63 @@ const interviewReportModel = require("../models/interviewReport.model");
  * @description Controller to generate interview report based on user self description, resume and job description.
  */
 async function generateInterViewReportController(req, res) {
-  let resumeText = "";
-  if (req.file) {
-    const resumeContent = await new pdfParse.PDFParse(
-      Uint8Array.from(req.file.buffer),
-    ).getText();
-    resumeText = resumeContent.text || "";
+  try {
+    let resumeText = "";
+    if (req.file) {
+      try {
+        if (req.file.mimetype === "application/pdf" || req.file.originalname.toLowerCase().endsWith(".pdf")) {
+          const resumeContent = await new pdfParse.PDFParse(
+            Uint8Array.from(req.file.buffer),
+          ).getText();
+          resumeText = resumeContent.text || "";
+        } else {
+          // If it is docx/txt, convert buffer directly to clean string
+          resumeText = req.file.buffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, "");
+        }
+      } catch (parseError) {
+        console.error("Error parsing resume file:", parseError);
+        resumeText = req.file.buffer.toString("utf-8").replace(/[^\x20-\x7E\n\r\t]/g, "");
+      }
+    }
+    const { selfDescription, jobDescription } = req.body;
+
+    if (!jobDescription || !jobDescription.trim()) {
+      return res.status(400).json({
+        message: "Job description is required.",
+      });
+    }
+
+    const interViewReportByAi = await generateInterviewReport({
+      resume: resumeText || "Not provided",
+      selfDescription: selfDescription || "Not provided",
+      jobDescription,
+    });
+
+    // Ensure we have a valid job title, falling back to a snippet of the job description if the AI does not return a title
+    const cleanJobDescription = jobDescription || "";
+    const firstLine = cleanJobDescription.trim().split("\n")[0] || "Interview Strategy";
+    const fallbackTitle = firstLine.length > 60 ? firstLine.substring(0, 57) + "..." : firstLine;
+
+    const interviewReport = await interviewReportModel.create({
+      user: req.user.id,
+      resume: resumeText,
+      selfDescription,
+      jobDescription,
+      ...interViewReportByAi,
+      title: interViewReportByAi.title || fallbackTitle || "Interview Strategy",
+    });
+
+    res.status(201).json({
+      message: "Interview report generated successfully.",
+      interviewReport,
+    });
+  } catch (err) {
+    console.error("Error in generateInterViewReportController:", err);
+    res.status(500).json({
+      message: "Failed to generate interview strategy report.",
+      error: err.message,
+    });
   }
-  const { selfDescription, jobDescription } = req.body;
-
-  const interViewReportByAi = await generateInterviewReport({
-    resume: resumeText || "Not provided",
-    selfDescription: selfDescription || "Not provided",
-    jobDescription,
-  });
-
-  // Ensure we have a valid job title, falling back to a snippet of the job description if the AI does not return a title
-  const cleanJobDescription = jobDescription || "";
-  const firstLine = cleanJobDescription.trim().split("\n")[0] || "Interview Strategy";
-  const fallbackTitle = firstLine.length > 60 ? firstLine.substring(0, 57) + "..." : firstLine;
-
-  const interviewReport = await interviewReportModel.create({
-    user: req.user.id,
-    resume: resumeText,
-    selfDescription,
-    jobDescription,
-    ...interViewReportByAi,
-    title: interViewReportByAi.title || fallbackTitle || "Interview Strategy",
-  });
-
-  res.status(201).json({
-    message: "Interview report generated successfully.",
-    interviewReport,
-  });
 }
 
 /**
