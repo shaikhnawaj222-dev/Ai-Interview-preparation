@@ -239,7 +239,7 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
   const cleanSelfDesc = cleanAndTruncate(selfDescription, 1000);
   const cleanJobDesc = cleanAndTruncate(jobDescription, 2000);
 
-  const prompt = `Generate a highly professional, ATS-friendly resume for a candidate tailored to the target job description.
+  const prompt = `Generate a highly professional, ATS-friendly, and modern corporate resume for a candidate tailored to the target job description.
 
                         Candidate Data:
                         - Resume: ${cleanResume}
@@ -251,39 +251,37 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                         The response should be a JSON object with a single field "html" containing the complete HTML content of the resume.
 
                         STRICT STYLE & LAYOUT CONSTRAINTS:
-                        You MUST use the exact HTML structure and CSS styles specified below. Do NOT alter the CSS classes, colors, fonts, margins, or padding. This is critical to keep the design and styling completely consistent for every resume generated.
+                        You MUST use the exact HTML structure and CSS styles specified below. Do NOT alter the CSS classes, colors, fonts, margins, or padding. This ensures a clean, predictable, single-column design that passes all ATS parsers and prints perfectly.
 
                         Strict CSS stylesheet to include inside the <style> tag of the <head>:
                         \`\`\`css
-                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+                        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
                         * { box-sizing: border-box; margin: 0; padding: 0; }
                         body {
                           font-family: 'Inter', sans-serif;
-                          color: #334155;
+                          color: #1e293b;
                           background-color: #ffffff;
-                          line-height: 1.4;
-                          font-size: 10px;
-                          padding: 10mm 15mm;
+                          line-height: 1.5;
+                          font-size: 10.5px;
+                          padding: 15mm 20mm;
                         }
                         .header {
                           text-align: center;
-                          border-bottom: 2px solid #0f172a;
-                          padding-bottom: 8px;
-                          margin-bottom: 12px;
+                          margin-bottom: 16px;
                         }
                         .header h1 {
-                          font-size: 20px;
+                          font-size: 24px;
                           font-weight: 700;
                           color: #0f172a;
                           text-transform: uppercase;
                           letter-spacing: 0.5px;
-                          margin-bottom: 2px;
+                          margin-bottom: 4px;
                         }
                         .header .title {
-                          font-size: 11px;
+                          font-size: 12px;
                           font-weight: 600;
                           color: #2563eb;
-                          margin-bottom: 6px;
+                          margin-bottom: 8px;
                           text-transform: uppercase;
                           letter-spacing: 1px;
                         }
@@ -291,36 +289,39 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                           display: flex;
                           justify-content: center;
                           flex-wrap: wrap;
-                          gap: 12px;
-                          font-size: 9px;
+                          gap: 8px;
+                          font-size: 9.5px;
                           color: #475569;
                         }
                         .header .contact a {
-                          color: #475569;
+                          color: #2563eb;
                           text-decoration: none;
                         }
+                        .header .contact a:hover {
+                          text-decoration: underline;
+                        }
                         .section {
-                          margin-bottom: 12px;
+                          margin-bottom: 14px;
                         }
                         .section-title {
-                          font-size: 10.5px;
+                          font-size: 11.5px;
                           font-weight: 700;
                           color: #0f172a;
                           text-transform: uppercase;
-                          letter-spacing: 0.5px;
-                          border-bottom: 1px solid #cbd5e1;
-                          padding-bottom: 2px;
-                          margin-bottom: 6px;
+                          letter-spacing: 0.8px;
+                          border-bottom: 1.5px solid #0f172a;
+                          padding-bottom: 3px;
+                          margin-bottom: 8px;
                         }
                         .summary {
-                          font-size: 9.5px;
+                          font-size: 10px;
                           color: #334155;
-                          margin-bottom: 8px;
-                          line-height: 1.45;
+                          margin-bottom: 10px;
+                          line-height: 1.5;
                           text-align: justify;
                         }
                         .item {
-                          margin-bottom: 8px;
+                          margin-bottom: 10px;
                           page-break-inside: avoid;
                         }
                         .item-header {
@@ -328,52 +329,57 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
                           justify-content: space-between;
                           font-weight: 600;
                           color: #0f172a;
-                          font-size: 10px;
-                          margin-bottom: 1px;
+                          font-size: 10.5px;
+                          margin-bottom: 2px;
                         }
                         .item-subheader {
                           display: flex;
                           justify-content: space-between;
-                          font-size: 9px;
+                          font-size: 9.5px;
                           color: #475569;
                           font-style: italic;
-                          margin-bottom: 3px;
+                          margin-bottom: 4px;
                         }
                         .bullets {
                           list-style-type: disc;
-                          padding-left: 12px;
+                          padding-left: 14px;
                           color: #334155;
                         }
                         .bullets li {
-                          margin-bottom: 2px;
-                          font-size: 9.5px;
+                          margin-bottom: 3px;
+                          font-size: 10px;
+                          line-height: 1.45;
                         }
-                        .skills-grid {
-                          display: grid;
-                          grid-template-columns: repeat(2, 1fr);
-                          gap: 6px;
+                        .skills-list {
+                          display: flex;
+                          flex-direction: column;
+                          gap: 4px;
                         }
-                        .skill-category {
-                          font-size: 9.5px;
+                        .skill-item {
+                          font-size: 10px;
                           color: #334155;
+                          line-height: 1.4;
                         }
-                        .skill-category strong {
+                        .skill-item strong {
                           color: #0f172a;
                         }
                         \`\`\`
 
                         Strict HTML structure instructions:
-                        - Enclose name, title, contact inside a div with class "header".
-                        - Use sections with class "section". Inside each, put the title in a div with class "section-title" (e.g., "PROFESSIONAL SUMMARY", "WORK EXPERIENCE", "PROJECTS", "EDUCATION", "SKILLS").
-                        - For summary text, use a paragraph with class "summary".
+                        - Enclose candidate name, target title, and contact links (separated by '  •  ') inside a div with class "header".
+                        - Use sections with class "section". Inside each, put the title in a div with class "section-title" (e.g. "PROFESSIONAL SUMMARY", "WORK EXPERIENCE", "PROJECTS", "EDUCATION", "SKILLS").
+                        - For the summary text, use a paragraph with class "summary".
                         - For job roles, projects, or degrees, use a div with class "item".
                           - Use class "item-header" to place Title (e.g. Job Title, Project Name) on the left and Date on the right.
                           - Use class "item-subheader" to place Subtitle (Company / Institution) on the left and Location on the right.
                           - Use a list with class "bullets" for the description items.
-                        - For skills, use a div with class "skills-grid" containing divs with class "skill-category".
-                        
-                        CRITICAL PAGE CONSTRAINTS (STRICTLY 1-2 PAGES):
-                        Keep text tight and select only the most relevant experience and points so the generated HTML fits perfectly within exactly 1 or 2 A4 pages.
+                        - For skills, use a div with class "skills-list" containing divs with class "skill-item" (e.g. <div><strong>Programming Languages:</strong> JavaScript, Python, Java</div>).
+
+                        PROFESSIONAL CONTENT GUIDELINES (ATS OPTIMIZATION):
+                        1. Action-Oriented Bullets: Begin every bullet point in experience/projects with a strong action verb (e.g. "Developed", "Spearheaded", "Optimized", "Architected").
+                        2. Quantified Metrics: Include measurable results where possible (e.g., "improving application loading speed by 30%", "reducing query times by 20%").
+                        3. ATS Alignment: Integrate key technical skills and keywords from the target Job Description naturally into the resume summary and descriptions.
+                        4. Page Limit: Tailor and select only the most relevant details to ensure the resume fits cleanly on 1 or 2 A4 pages.
                     `;
 
   const response = await ai.models.generateContent({
