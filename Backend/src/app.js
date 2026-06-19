@@ -12,16 +12,18 @@ const allowedOrigins = [
   "https://ai-interview-preparation-1-u507.onrender.com",
 ];
 
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+  const urlWithoutTrailingSlash = process.env.FRONTEND_URL.replace(/\/$/, "");
+  if (!allowedOrigins.includes(urlWithoutTrailingSlash)) {
+    allowedOrigins.push(urlWithoutTrailingSlash);
+  }
+}
+
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
+    origin: true,
     credentials: true,
   }),
 );
