@@ -10,6 +10,26 @@ import { useContext, useEffect, useCallback } from "react";
 import { InterviewContext } from "../interview.context";
 import { useParams, useNavigate } from "react-router";
 
+const getFriendlyErrorMessage = (technicalError) => {
+  if (!technicalError) return "Failed to generate PDF resume. Please try again.";
+  
+  const errStr = technicalError.toString().toLowerCase();
+  
+  if (errStr.includes("failed to launch the browser") || errStr.includes("shared libraries") || errStr.includes("puppeteer") || errStr.includes("libatk")) {
+    return "Server Error: The PDF generator is not set up correctly on the server.";
+  }
+  
+  if (errStr.includes("api key") || errStr.includes("quota") || errStr.includes("limit") || errStr.includes("429") || errStr.includes("exhausted") || errStr.includes("api_key")) {
+    return "API Error: The AI service limit has been reached. Please check the API key.";
+  }
+  
+  if (errStr.includes("network") || errStr.includes("timeout") || errStr.includes("conn") || errStr.includes("err_connection")) {
+    return "Network Error: Please check your internet connection and try again.";
+  }
+  
+  return technicalError;
+};
+
 export const useInterview = () => {
   const context = useContext(InterviewContext);
   const { interviewId } = useParams();
@@ -88,7 +108,7 @@ export const useInterview = () => {
       if (response && response.type === "application/json") {
         const text = await response.text();
         const errObj = JSON.parse(text);
-        alert(errObj.message || "Failed to generate PDF resume.");
+        alert(getFriendlyErrorMessage(errObj.message || "Failed to generate PDF resume."));
         return;
       }
 
@@ -115,7 +135,7 @@ export const useInterview = () => {
       } else if (error.message) {
         errMsg = error.message;
       }
-      alert(errMsg);
+      alert(getFriendlyErrorMessage(errMsg));
     } finally {
       setLoading(false);
     }

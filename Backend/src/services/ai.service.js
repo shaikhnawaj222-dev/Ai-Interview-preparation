@@ -234,7 +234,7 @@ async function generatePdfFromHtml(htmlContent) {
   }
 }
 
-async function generateResumePdf({ resume, selfDescription, jobDescription }) {
+async function generateResumeHtml({ resume, selfDescription, jobDescription }) {
   const cleanResume = cleanAndTruncate(resume, 3000);
   const cleanSelfDesc = cleanAndTruncate(selfDescription, 1000);
   const cleanJobDesc = cleanAndTruncate(jobDescription, 2000);
@@ -392,10 +392,12 @@ async function generateResumePdf({ resume, selfDescription, jobDescription }) {
   });
 
   const jsonContent = JSON.parse(response.text);
+  return jsonContent.html;
+}
 
-  const pdfBuffer = await generatePdfFromHtml(jsonContent.html);
-
-  return pdfBuffer;
+async function generateResumePdf({ resume, selfDescription, jobDescription }) {
+  const html = await generateResumeHtml({ resume, selfDescription, jobDescription });
+  return await generatePdfFromHtml(html);
 }
 
 async function evaluateAnswer({ question, answer, jobTitle }) {
@@ -426,4 +428,10 @@ async function evaluateAnswer({ question, answer, jobTitle }) {
   return JSON.parse(response.text);
 }
 
-module.exports = { generateInterviewReport, generateResumePdf, evaluateAnswer };
+module.exports = {
+  generateInterviewReport,
+  generateResumePdf,
+  generateResumeHtml,
+  generatePdfFromHtml,
+  evaluateAnswer,
+};

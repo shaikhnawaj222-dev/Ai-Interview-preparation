@@ -2,6 +2,8 @@ const pdfParse = require("pdf-parse");
 const {
   generateInterviewReport,
   generateResumePdf,
+  generateResumeHtml,
+  generatePdfFromHtml,
   evaluateAnswer,
 } = require("../services/ai.service");
 const interviewReportModel = require("../models/interviewReport.model");
@@ -42,6 +44,17 @@ async function generateInterViewReportController(req, res) {
       jobDescription,
     });
 
+    let resumeHtml = "";
+    try {
+      resumeHtml = await generateResumeHtml({
+        resume: resumeText || "Not provided",
+        selfDescription: selfDescription || "Not provided",
+        jobDescription,
+      });
+    } catch (resumeError) {
+      console.error("Error generating resume HTML during strategy creation:", resumeError);
+    }
+
     // Ensure we have a valid job title, falling back to a snippet of the job description if the AI does not return a title
     const cleanJobDescription = jobDescription || "";
     const firstLine = cleanJobDescription.trim().split("\n")[0] || "Interview Strategy";
@@ -54,6 +67,7 @@ async function generateInterViewReportController(req, res) {
       jobDescription,
       ...interViewReportByAi,
       title: interViewReportByAi.title || fallbackTitle || "Interview Strategy",
+      resumeHtml,
     });
 
     res.status(201).json({
@@ -127,11 +141,21 @@ async function generateResumePdfController(req, res) {
 
     const { resume, jobDescription, selfDescription } = interviewReport;
 
-    const pdfBuffer = await generateResumePdf({
-      resume,
-      jobDescription,
-      selfDescription,
-    });
+    let resumeHtml = interviewReport.resumeHtml;
+
+    // Fallback if not generated during strategy creation (e.g. for old data)
+    if (!resumeHtml) {
+      resumeHtml = await generateResumeHtml({
+        resume: resume || "Not provided",
+        selfDescription: selfDescription || "Not provided",
+        jobDescription: jobDescription || "Not provided",
+      });
+      interviewReport.resumeHtml = resumeHtml;
+      await interviewReport.save();
+    }
+
+    // Convert HTML to PDF buffer using Puppeteer
+    const pdfBuffer = await generatePdfFromHtml(resumeHtml);
 
     res.set({
       "Content-Type": "application/pdf",
